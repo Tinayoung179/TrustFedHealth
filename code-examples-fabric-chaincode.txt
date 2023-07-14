@@ -1,0 +1,85 @@
+'use strict';
+
+const { Contract } = require('fabric-contract-api');
+
+class Model extends Contract {
+    async initLedger(ctx) {
+        console.info('============= START : Initialize Ledger ===========');
+        const models = [
+            {
+                ID: 'model1',
+                timestamp: '2022-02-16T15:00:00Z',
+                modelHashing: 'hash1',
+                task: 'classification',
+                quality: '0.8',
+                modelLink: 'https://example.com/model1',
+                note: 'Initial model'
+            }
+        ];
+
+        for (let i = 0; i < models.length; i++) {
+            models[i].docType = 'model';
+            await ctx.stub.putState(models[i].ID, Buffer.from(JSON.stringify(models[i])));
+            console.info('Added <--> ', models[i]);
+        }
+        console.info('============= END : Initialize Ledger ===========');
+    }
+
+    async getModel(ctx, id) {
+        const modelAsBytes = await ctx.stub.getState(id);
+        if (!modelAsBytes || modelAsBytes.length === 0) {
+            throw new Error(`${id} does not exist`);
+        }
+        console.log(modelAsBytes.toString());
+        return modelAsBytes.toString();
+    }
+
+    async createModel(ctx, id, timestamp, modelHashing, task, quality, modelLink, note) {
+        console.info('============= START : Create Model ===========');
+
+        const model = {
+            ID: id,
+            timestamp,
+            modelHashing,
+            task,
+            quality,
+            modelLink,
+            note,
+            docType: 'model'
+        };
+
+        await ctx.stub.putState(id, Buffer.from(JSON.stringify(model)));
+        console.info('============= END : Create Model ===========');
+    }
+
+    async updateModel(ctx, id, newTimestamp, newModelHashing, newTask, newQuality, newModelLink, newNote) {
+        console.info('============= START : updateModel ===========');
+
+        const modelAsBytes = await ctx.stub.getState(id);
+        if (!modelAsBytes || modelAsBytes.length === 0) {
+            throw new Error(`${id} does not exist`);
+        }
+        const model = JSON.parse(modelAsBytes.toString());
+        model.timestamp = newTimestamp;
+        model.modelHashing = newModelHashing;
+        model.task = newTask;
+        model.quality = newQuality;
+        model.modelLink = newModelLink;
+        model.note = newNote;
+
+        await ctx.stub.putState(id, Buffer.from(JSON.stringify(model)));
+        console.info('============= END : updateModel ===========');
+    }
+
+    async deleteModel(ctx, id) {
+        console.info('============= START : deleteModel ===========');
+        const modelAsBytes = await ctx.stub.getState(id);
+        if (!modelAsBytes || modelAsBytes.length === 0) {
+            throw new Error(`${id} does not exist`);
+        }
+        await ctx.stub.deleteState(id);
+        console.info('============= END : deleteModel ===========');
+    }
+}
+
+module.exports = Model;
